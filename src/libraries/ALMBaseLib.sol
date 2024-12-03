@@ -8,10 +8,7 @@ library ALMBaseLib {
     address constant USDT = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
     address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
 
-    address constant CHAINLINK_7_DAYS_VOL = 0xF3140662cE17fDee0A6675F9a511aDbc4f394003;
-    address constant CHAINLINK_30_DAYS_VOL = 0x8e604308BD61d975bc6aE7903747785Db7dE97e2;
-
-    uint24 public constant ETH_USDC_POOL_FEE = 500;
+    uint24 public constant USDT_USDC_POOL_FEE = 100;
 
     address constant SWAP_ROUTER = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
     ISwapRouter constant swapRouter = ISwapRouter(SWAP_ROUTER);
@@ -22,7 +19,7 @@ library ALMBaseLib {
                 ISwapRouter.ExactInputSingleParams({
                     tokenIn: tokenIn,
                     tokenOut: tokenOut,
-                    fee: ETH_USDC_POOL_FEE,
+                    fee: USDT_USDC_POOL_FEE,
                     recipient: address(this),
                     deadline: block.timestamp,
                     amountIn: amountIn,
@@ -33,18 +30,18 @@ library ALMBaseLib {
     }
 
     function swapExactOutput(address tokenIn, address tokenOut, uint256 amountOut) internal returns (uint256) {
-        return
-            swapRouter.exactOutputSingle(
-                ISwapRouter.ExactOutputSingleParams({
-                    tokenIn: tokenIn,
-                    tokenOut: tokenOut,
-                    fee: ETH_USDC_POOL_FEE,
-                    recipient: address(this),
-                    deadline: block.timestamp,
-                    amountInMaximum: type(uint256).max,
-                    amountOut: amountOut,
-                    sqrtPriceLimitX96: 0
-                })
-            );
+        // return
+        //     swapRouter.exactOutputSingle(
+        //         ISwapRouter.ExactOutputSingleParams({
+        //             tokenIn: tokenIn,
+        //             tokenOut: tokenOut,
+        //             fee: ETH_USDC_POOL_FEE,
+        //             recipient: address(this),
+        //             deadline: block.timestamp,
+        //             amountInMaximum: type(uint256).max,
+        //             amountOut: amountOut,
+        //             sqrtPriceLimitX96: 0
+        //         })
+        //     );
     }
 }

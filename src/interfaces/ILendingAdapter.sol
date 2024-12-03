@@ -2,37 +2,20 @@
 pragma solidity ^0.8.25;
 
 interface ILendingAdapter {
-    // ** Long market
-    function getBorrowedLong() external view returns (uint256);
+    function borrow(uint256 amount) external;
 
-    function borrowLong(uint256 amountUSDC) external;
+    function addCollateral(uint256 amount) external;
 
-    function repayLong(uint256 amountUSDC) external;
+    function repay(uint256 amount) external;
 
-    function getCollateralLong() external view returns (uint256);
+    function getCollateral() external view returns (uint256);
 
-    function removeCollateralLong(uint256 amount) external;
+    function removeCollateral(uint256 amount) external;
 
-    function addCollateralLong(uint256 amount) external;
-
-    // ** Short market
-    function getBorrowedShort() external view returns (uint256);
-
-    function borrowShort(uint256 amount) external;
-
-    function repayShort(uint256 amount) external;
-
-    function getCollateralShort() external view returns (uint256);
-
-    function removeCollateralShort(uint256 amountUSDC) external;
-
-    function addCollateralShort(uint256 amountUSDC) external;
-
-    // ** Helpers
-    function syncLong() external;
-
-    function syncShort() external;
+    function getBorrowed() external view returns (uint256);
 
     // ** Params
     function addAuthorizedCaller(address) external;
+
+    function getAssetPrice(address underlying) external view returns (uint256);
 }

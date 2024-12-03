@@ -21,6 +21,18 @@ import {BaseStrategyHook} from "@src/core/BaseStrategyHook.sol";
 
 import {IPoolManager} from "v4-core/interfaces/IPoolManager.sol";
 
+interface ILendingPool {
+    function flashLoan(
+        address receiverAddress,
+        address[] calldata assets,
+        uint256[] calldata amounts,
+        uint256[] calldata modes,
+        address onBehalfOf,
+        bytes calldata params,
+        uint16 referralCode
+    ) external;
+}
+
 /// @title ALM
 /// @author IVikkk
 /// @custom:contact vivan.volovik@gmail.com
@@ -44,256 +56,252 @@ contract ALM is BaseStrategyHook, ERC20 {
     }
 
     /// @notice  Disable adding liquidity through the PM
-    function beforeAddLiquidity(
-        address,
-        PoolKey calldata key,
-        IPoolManager.ModifyLiquidityParams calldata,
-        bytes calldata
-    ) external view override onlyAuthorizedPool(key) returns (bytes4) {
-        revert AddLiquidityThroughHook();
-    }
+    // function beforeAddLiquidity(
+    //     address,
+    //     PoolKey calldata key,
+    //     IPoolManager.ModifyLiquidityParams calldata,
+    //     bytes calldata
+    // ) external view override returns (bytes4) {
+    //     revert AddLiquidityThroughHook();
+    // }
 
-    function deposit(address to, uint256 amount) external notPaused notShutdown returns (uint256, uint256) {
-        if (amount == 0) revert ZeroLiquidity();
-        refreshReserves();
-        (uint128 deltaL, uint256 amountIn, uint256 shares) = _calcDepositParams(amount);
+    // uint256 leverage = 5 ether;
+    // ILendingPool constant LENDING_POOL = ILendingPool(0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9);
 
-        USDC.transferFrom(msg.sender, address(this), amountIn);
-        // lendingAdapter.addCollateral(WETH.balanceOf(address(this)));
-        liquidity = liquidity + deltaL;
+    // function deposit(address to, uint256 amount) external notPaused notShutdown {
+    //     if (amount == 0) revert ZeroLiquidity();
+    //     USDC.transferFrom(msg.sender, address(this), amount);
 
-        _mint(to, shares);
+    //     uint256 tvl1 = TVL();
 
-        emit Deposit(msg.sender, amountIn, shares);
-        return (amountIn, shares);
-    }
+    //     //** flash loan */
+    //     uint256 usdtToFlashLoan = (_USDCtoUSDT(amount) * (leverage - 1 ether)) / 1e18;
+    //     address[] memory assets = new address[](1);
+    //     uint256[] memory amounts = new uint256[](1);
+    //     uint256[] memory modes = new uint256[](1);
+    //     (assets[0], amounts[0], modes[0]) = (address(USDT), usdtToFlashLoan, 0);
+    //     LENDING_POOL.flashLoan(address(this), assets, amounts, modes, address(this), "", 0);
 
-    function withdraw(address to, uint256 sharesOut) external notPaused {
-        // if (balanceOf(msg.sender) < sharesOut) revert NotEnoughSharesToWithdraw();
-        // // uint256 usdcToRepay = lendingAdapter.getBorrowed();
-        // uint256 usdcSupplied = lendingAdapter.getSupplied();
-        // if (usdcToRepay == 0) {
-        //     if (usdcSupplied != 0) {
-        //         console.log("> have usdc");
-        //         // ** have usdc;
-        //         lendingAdapter.withdraw(
-        //             ALMMathLib.getWithdrawAmount(sharesOut, totalSupply(), lendingAdapter.getSupplied())
-        //         );
-        //     }
-        //     lendingAdapter.removeCollateral(
-        //         ALMMathLib.getWithdrawAmount(sharesOut, totalSupply(), lendingAdapter.getCollateral())
-        //     );
-        // } else if (usdcToRepay != 0 && usdcSupplied == 0) {
-        //     console.log("> have usdc debt");
-        //     // ** have usdc debt;
-        //     IRebalanceAdapter(rebalanceAdapter).withdraw(
-        //         ALMMathLib.getWithdrawAmount(sharesOut, totalSupply(), usdcToRepay),
-        //         ALMMathLib.getWithdrawAmount(sharesOut, totalSupply(), lendingAdapter.getCollateral())
-        //     );
-        // } else revert BalanceInconsistency();
-        // _burn(msg.sender, sharesOut);
-        // uint256 amount0 = USDC.balanceOf(address(this));
-        // uint256 amount1 = WETH.balanceOf(address(this));
-        // USDC.transfer(to, amount0);
-        // WETH.transfer(to, amount1);
-        // emit Withdraw(to, sharesOut, amount0, amount1);
-    }
+    //     uint256 tvl2 = TVL();
 
-    // --- Swapping logic ---
-    function beforeSwap(
-        address,
-        PoolKey calldata key,
-        IPoolManager.SwapParams calldata params,
-        bytes calldata
-    )
-        external
-        override
-        notPaused
-        notShutdown
-        onlyAuthorizedPool(key)
-        onlyByPoolManager
-        returns (bytes4, BeforeSwapDelta, uint24)
-    {
-        return (this.beforeSwap.selector, _beforeSwap(params, key), 0);
-    }
+    //     liquidity = getCurrentLiquidity();
 
-    // @Notice: this function is mainly for removing stack too deep error
-    function _beforeSwap(
-        IPoolManager.SwapParams calldata params,
-        PoolKey calldata key
-    ) internal returns (BeforeSwapDelta) {
-        refreshReserves();
+    //     if (tvl1 == 0) {
+    //         _mint(to, tvl2);
+    //     } else {
+    //         uint256 sharesToMint = (totalSupply() * (tvl2 - tvl1)) / tvl1;
+    //         _mint(to, sharesToMint);
+    //     }
+    // }
 
-        // if (params.zeroForOne) {
-        //     console.log("> WETH price go up...");
-        //     // If user is selling Token 0 and buying Token 1 (USDC => WETH)
-        //     // TLDR: Here we got USDC and save it on balance. And just give our ETH back to USER.
-        //     (
-        //         BeforeSwapDelta beforeSwapDelta,
-        //         uint256 wethOut,
-        //         uint256 usdcIn,
-        //         uint160 sqrtPriceNext
-        //     ) = getZeroForOneDeltas(params.amountSpecified);
+    // function executeOperation(
+    //     address[] calldata,
+    //     uint256[] calldata amounts,
+    //     uint256[] calldata premiums,
+    //     address,
+    //     bytes calldata
+    // ) external returns (bool) {
+    //     require(msg.sender == address(LENDING_POOL), "M0");
 
-        //     // They will be sending Token 0 to the PM, creating a debit of Token 0 in the PM
-        //     // We will take actual ERC20 Token 0 from the PM and keep it in the hook and create an equivalent credit for that Token 0 since it is ours!
-        //     key.currency0.take(poolManager, address(this), usdcIn, false);
-        //     repayAndSupply(usdcIn); // Notice: repaying if needed to reduce lending interest.
+    //     // ** SWAP USDT => USDC
+    //     ALMBaseLib.swapExactInput(address(USDT), address(USDC), amounts[0]);
 
-        //     // We don't have token 1 on our account yet, so we need to withdraw WETH from the Morpho.
-        //     // We also need to create a debit so user could take it back from the PM.
-        //     lendingAdapter.removeCollateral(wethOut);
-        //     key.currency1.settle(poolManager, address(this), wethOut, false);
+    //     // ** Add collateral USDC
+    //     lendingAdapter.addCollateral(USDC.balanceOf(address(this)));
 
-        //     sqrtPriceCurrent = sqrtPriceNext;
-        //     return beforeSwapDelta;
-        // } else {
-        //     console.log("> WETH price go down...");
-        //     // If user is selling Token 1 and buying Token 0 (WETH => USDC)
-        //     // TLDR: Here we borrow USDC at Morpho and give it back.
+    //     // ** Borrow USDT to repay flashloan
+    //     uint256 usdtToBorrow = amounts[0] + premiums[0];
+    //     lendingAdapter.borrow(usdtToBorrow);
+    //     return true;
+    // }
 
-        //     (
-        //         BeforeSwapDelta beforeSwapDelta,
-        //         uint256 wethIn,
-        //         uint256 usdcOut,
-        //         uint160 sqrtPriceNext
-        //     ) = getOneForZeroDeltas(params.amountSpecified);
+    // // --- Swapping logic ---
+    // function beforeSwap(
+    //     address,
+    //     PoolKey calldata key,
+    //     IPoolManager.SwapParams calldata params,
+    //     bytes calldata
+    // ) external override notPaused notShutdown onlyByPoolManager returns (bytes4, BeforeSwapDelta, uint24) {
+    //     return (this.beforeSwap.selector, _beforeSwap(params, key), 0);
+    // }
 
-        //     // Put extra WETH to Morpho
-        //     key.currency1.take(poolManager, address(this), wethIn, false);
-        //     lendingAdapter.addCollateral(wethIn);
+    // // @Notice: this function is mainly for removing stack too deep error
+    // function _beforeSwap(
+    //     IPoolManager.SwapParams calldata params,
+    //     PoolKey calldata key
+    // ) internal returns (BeforeSwapDelta) {
+    //     refreshReserves();
 
-        //     // Ensure we have enough USDC. Redeem from reserves and borrow if needed.
-        //     redeemAndBorrow(usdcOut);
-        //     key.currency0.settle(poolManager, address(this), usdcOut, false);
+    //     // if (params.zeroForOne) {
+    //     //     console.log("> WETH price go up...");
+    //     //     // If user is selling Token 0 and buying Token 1 (USDC => WETH)
+    //     //     // TLDR: Here we got USDC and save it on balance. And just give our ETH back to USER.
+    //     //     (
+    //     //         BeforeSwapDelta beforeSwapDelta,
+    //     //         uint256 wethOut,
+    //     //         uint256 usdcIn,
+    //     //         uint160 sqrtPriceNext
+    //     //     ) = getZeroForOneDeltas(params.amountSpecified);
 
-        //     sqrtPriceCurrent = sqrtPriceNext;
-        //     return beforeSwapDelta;
-        // }
-    }
+    //     //     // They will be sending Token 0 to the PM, creating a debit of Token 0 in the PM
+    //     //     // We will take actual ERC20 Token 0 from the PM and keep it in the hook and create an equivalent credit for that Token 0 since it is ours!
+    //     //     key.currency0.take(poolManager, address(this), usdcIn, false);
+    //     //     repayAndSupply(usdcIn); // Notice: repaying if needed to reduce lending interest.
 
-    // --- Internal and view functions ---
+    //     //     // We don't have token 1 on our account yet, so we need to withdraw WETH from the Morpho.
+    //     //     // We also need to create a debit so user could take it back from the PM.
+    //     //     lendingAdapter.removeCollateral(wethOut);
+    //     //     key.currency1.settle(poolManager, address(this), wethOut, false);
 
-    function getZeroForOneDeltas(
-        int256 amountSpecified
-    ) internal view returns (BeforeSwapDelta beforeSwapDelta, uint256 wethOut, uint256 usdcIn, uint160 sqrtPriceNext) {
-        if (amountSpecified > 0) {
-            // console.log("> amount specified positive");
-            wethOut = uint256(amountSpecified);
+    //     //     sqrtPriceCurrent = sqrtPriceNext;
+    //     //     return beforeSwapDelta;
+    //     // } else {
+    //     //     console.log("> WETH price go down...");
+    //     //     // If user is selling Token 1 and buying Token 0 (WETH => USDC)
+    //     //     // TLDR: Here we borrow USDC at Morpho and give it back.
 
-            sqrtPriceNext = ALMMathLib.sqrtPriceNextX96ZeroForOneOut(sqrtPriceCurrent, liquidity, wethOut);
+    //     //     (
+    //     //         BeforeSwapDelta beforeSwapDelta,
+    //     //         uint256 wethIn,
+    //     //         uint256 usdcOut,
+    //     //         uint160 sqrtPriceNext
+    //     //     ) = getOneForZeroDeltas(params.amountSpecified);
 
-            usdcIn = ALMMathLib.getSwapAmount0(sqrtPriceCurrent, sqrtPriceNext, liquidity);
+    //     //     // Put extra WETH to Morpho
+    //     //     key.currency1.take(poolManager, address(this), wethIn, false);
+    //     //     lendingAdapter.addCollateral(wethIn);
 
-            beforeSwapDelta = toBeforeSwapDelta(
-                -int128(uint128(wethOut)), // specified token = token1
-                int128(uint128(usdcIn)) // unspecified token = token0
-            );
-        } else {
-            // console.log("> amount specified negative");
-            usdcIn = uint256(-amountSpecified);
+    //     //     // Ensure we have enough USDC. Redeem from reserves and borrow if needed.
+    //     //     redeemAndBorrow(usdcOut);
+    //     //     key.currency0.settle(poolManager, address(this), usdcOut, false);
 
-            sqrtPriceNext = ALMMathLib.sqrtPriceNextX96ZeroForOneIn(sqrtPriceCurrent, liquidity, usdcIn);
+    //     //     sqrtPriceCurrent = sqrtPriceNext;
+    //     //     return beforeSwapDelta;
+    //     // }
+    // }
 
-            wethOut = ALMMathLib.getSwapAmount1(sqrtPriceCurrent, sqrtPriceNext, liquidity);
+    // // --- Internal and view functions ---
 
-            beforeSwapDelta = toBeforeSwapDelta(
-                int128(uint128(usdcIn)), // specified token = token0
-                -int128(uint128(wethOut)) // unspecified token = token1
-            );
-        }
-    }
+    // function getZeroForOneDeltas(
+    //     int256 amountSpecified
+    // ) internal view returns (BeforeSwapDelta beforeSwapDelta, uint256 wethOut, uint256 usdcIn, uint160 sqrtPriceNext) {
+    //     if (amountSpecified > 0) {
+    //         // console.log("> amount specified positive");
+    //         wethOut = uint256(amountSpecified);
 
-    function getOneForZeroDeltas(
-        int256 amountSpecified
-    ) internal view returns (BeforeSwapDelta beforeSwapDelta, uint256 wethIn, uint256 usdcOut, uint160 sqrtPriceNext) {
-        if (amountSpecified > 0) {
-            // console.log("> amount specified positive");
-            usdcOut = uint256(amountSpecified);
+    //         sqrtPriceNext = ALMMathLib.sqrtPriceNextX96ZeroForOneOut(sqrtPriceCurrent, liquidity, wethOut);
 
-            sqrtPriceNext = ALMMathLib.sqrtPriceNextX96OneForZeroOut(sqrtPriceCurrent, liquidity, usdcOut);
+    //         usdcIn = ALMMathLib.getSwapAmount0(sqrtPriceCurrent, sqrtPriceNext, liquidity);
 
-            wethIn = ALMMathLib.getSwapAmount1(sqrtPriceCurrent, sqrtPriceNext, liquidity);
+    //         beforeSwapDelta = toBeforeSwapDelta(
+    //             -int128(uint128(wethOut)), // specified token = token1
+    //             int128(uint128(usdcIn)) // unspecified token = token0
+    //         );
+    //     } else {
+    //         // console.log("> amount specified negative");
+    //         usdcIn = uint256(-amountSpecified);
 
-            beforeSwapDelta = toBeforeSwapDelta(
-                -int128(uint128(usdcOut)), // specified token = token0
-                int128(uint128(wethIn)) // unspecified token = token1
-            );
-        } else {
-            // console.log("> amount specified negative");
-            wethIn = uint256(-amountSpecified);
+    //         sqrtPriceNext = ALMMathLib.sqrtPriceNextX96ZeroForOneIn(sqrtPriceCurrent, liquidity, usdcIn);
 
-            sqrtPriceNext = ALMMathLib.sqrtPriceNextX96OneForZeroIn(sqrtPriceCurrent, liquidity, wethIn);
+    //         wethOut = ALMMathLib.getSwapAmount1(sqrtPriceCurrent, sqrtPriceNext, liquidity);
 
-            usdcOut = ALMMathLib.getSwapAmount0(sqrtPriceCurrent, sqrtPriceNext, liquidity);
+    //         beforeSwapDelta = toBeforeSwapDelta(
+    //             int128(uint128(usdcIn)), // specified token = token0
+    //             -int128(uint128(wethOut)) // unspecified token = token1
+    //         );
+    //     }
+    // }
 
-            beforeSwapDelta = toBeforeSwapDelta(
-                int128(uint128(wethIn)), // specified token = token1
-                -int128(uint128(usdcOut)) // unspecified token = token0
-            );
-        }
-    }
+    // function getOneForZeroDeltas(
+    //     int256 amountSpecified
+    // ) internal view returns (BeforeSwapDelta beforeSwapDelta, uint256 wethIn, uint256 usdcOut, uint160 sqrtPriceNext) {
+    //     if (amountSpecified > 0) {
+    //         // console.log("> amount specified positive");
+    //         usdcOut = uint256(amountSpecified);
 
-    function redeemAndBorrow(uint256 usdcOut) internal {
-        // uint256 withdrawAmount = ALMMathLib.min(lendingAdapter.getSupplied(), usdcOut);
-        // if (withdrawAmount > 0) lendingAdapter.withdraw(withdrawAmount);
-        // if (usdcOut > withdrawAmount) lendingAdapter.borrow(usdcOut - withdrawAmount);
-    }
+    //         sqrtPriceNext = ALMMathLib.sqrtPriceNextX96OneForZeroOut(sqrtPriceCurrent, liquidity, usdcOut);
 
-    function repayAndSupply(uint256 amountUSDC) internal {
-        // uint256 repayAmount = ALMMathLib.min(lendingAdapter.getBorrowed(), amountUSDC);
-        // if (repayAmount > 0) lendingAdapter.repay(repayAmount);
-        // if (amountUSDC > repayAmount) lendingAdapter.supply(amountUSDC - repayAmount);
-    }
+    //         wethIn = ALMMathLib.getSwapAmount1(sqrtPriceCurrent, sqrtPriceNext, liquidity);
 
-    function refreshReserves() public {
-        // lendingAdapter.syncLong();
-        // lendingAdapter.syncShort();
-    }
+    //         beforeSwapDelta = toBeforeSwapDelta(
+    //             -int128(uint128(usdcOut)), // specified token = token0
+    //             int128(uint128(wethIn)) // unspecified token = token1
+    //         );
+    //     } else {
+    //         // console.log("> amount specified negative");
+    //         wethIn = uint256(-amountSpecified);
 
-    // ---- Math functions
+    //         sqrtPriceNext = ALMMathLib.sqrtPriceNextX96OneForZeroIn(sqrtPriceCurrent, liquidity, wethIn);
 
-    function TVL() public view returns (uint256) {
-        // uint256 price = _calcCurrentPrice();
-        // int256 tvl = int256(lendingAdapter.getCollateral()) +
-        //     int256(lendingAdapter.getSupplied() / price) -
-        //     int256(lendingAdapter.getBorrowed() / price);
-        // return uint256(tvl);
-    }
+    //         usdcOut = ALMMathLib.getSwapAmount0(sqrtPriceCurrent, sqrtPriceNext, liquidity);
 
-    function sharePrice() public view returns (uint256) {
-        if (totalSupply() == 0) return 0;
-        return (TVL() * 1e18) / totalSupply();
-    }
+    //         beforeSwapDelta = toBeforeSwapDelta(
+    //             int128(uint128(wethIn)), // specified token = token1
+    //             -int128(uint128(usdcOut)) // unspecified token = token0
+    //         );
+    //     }
+    // }
 
-    function _calcCurrentPrice() public view returns (uint256) {
-        return ALMMathLib.getPriceFromSqrtPriceX96(sqrtPriceCurrent);
-    }
+    // function redeemAndBorrow(uint256 usdcOut) internal {
+    //     // uint256 withdrawAmount = ALMMathLib.min(lendingAdapter.getSupplied(), usdcOut);
+    //     // if (withdrawAmount > 0) lendingAdapter.withdraw(withdrawAmount);
+    //     // if (usdcOut > withdrawAmount) lendingAdapter.borrow(usdcOut - withdrawAmount);
+    // }
 
-    function _calcDepositParams(
-        uint256 amount
-    ) public view returns (uint128 _liquidity, uint256 _amount, uint256 shares) {
-        _liquidity = ALMMathLib.getLiquidityFromAmount1SqrtPriceX96(
-            ALMMathLib.getSqrtPriceAtTick(tickUpper),
-            sqrtPriceCurrent,
-            amount
-        );
-        (, _amount) = ALMMathLib.getAmountsFromLiquiditySqrtPriceX96(
-            sqrtPriceCurrent,
-            ALMMathLib.getSqrtPriceAtTick(tickUpper),
-            ALMMathLib.getSqrtPriceAtTick(tickLower),
-            _liquidity
-        );
+    // function repayAndSupply(uint256 amountUSDC) internal {
+    //     // uint256 repayAmount = ALMMathLib.min(lendingAdapter.getBorrowed(), amountUSDC);
+    //     // if (repayAmount > 0) lendingAdapter.repay(repayAmount);
+    //     // if (amountUSDC > repayAmount) lendingAdapter.supply(amountUSDC - repayAmount);
+    // }
 
-        uint256 _sharePrice = sharePrice();
-        shares = _sharePrice == 0 ? _amount : (_amount * 1e18) / _sharePrice;
-    }
+    // function refreshReserves() public {
+    //     // lendingAdapter.syncLong();
+    //     // lendingAdapter.syncShort();
+    // }
 
-    function adjustForFeesDown(uint256 amount) public pure returns (uint256 amountAdjusted) {
-        return amountAdjusted;
-    }
+    // // ---- Math functions
 
-    function adjustForFeesUp(uint256 amount) public pure returns (uint256 amountAdjusted) {
-        return amountAdjusted;
-    }
+    // function _USDCtoUSDT(uint256 amount) internal view returns (uint256) {
+    //     return (amount * price()) / 1e18;
+    // }
+
+    // function _USDTtoUSDC(uint256 amount) internal view returns (uint256) {
+    //     return ((amount * 1e18) / price());
+    // }
+
+    // function price() public view returns (uint256) {
+    //     return (lendingAdapter.getAssetPrice(address(USDT)) * 1e18) / lendingAdapter.getAssetPrice(address(USDC));
+    // }
+
+    // function TVL() public view returns (uint256) {
+    //     uint256 usdcColl = lendingAdapter.getCollateral();
+    //     uint256 usdtDebt = lendingAdapter.getBorrowed();
+    //     return usdcColl - _USDTtoUSDC(usdtDebt);
+    // }
+
+    // function sharePrice() public view returns (uint256) {
+    //     if (totalSupply() == 0) return 0;
+    //     return (TVL() * 1e18) / totalSupply();
+    // }
+
+    // function _calcCurrentPrice() public view returns (uint256) {
+    //     return ALMMathLib.getPriceFromSqrtPriceX96(sqrtPriceCurrent);
+    // }
+
+    // function getCurrentLiquidity() public view returns (uint128 liquidity) {
+    //     uint256 amount0 = lendingAdapter.getCollateral();
+    //     liquidity = ALMMathLib.getLiquidityFromAmount0SqrtPriceX96(
+    //         ALMMathLib.getSqrtPriceAtTick(tickUpper),
+    //         sqrtPriceCurrent,
+    //         amount0
+    //     );
+    // }
+
+    // function adjustForFeesDown(uint256 amount) public pure returns (uint256) {
+    //     return amount;
+    // }
+
+    // function adjustForFeesUp(uint256 amount) public pure returns (uint256) {
+    //     return amount;
+    // }
 }

@@ -24,10 +24,6 @@ interface IALM {
         uint256 created;
     }
 
-    event Deposit(address indexed to, uint256 amount, uint256 shares);
-
-    event Withdraw(address indexed to, uint256 shares, uint256 amount0, uint256 amount1);
-
     function sqrtPriceCurrent() external view returns (uint160);
 
     function refreshReserves() external;

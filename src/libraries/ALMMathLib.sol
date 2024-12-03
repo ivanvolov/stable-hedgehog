@@ -36,8 +36,7 @@ library ALMMathLib {
         return
             toUint160(
                 uint256(liquidity).mul(uint256(sqrtPriceCurrentX96)).div(
-                    uint256(liquidity) -
-                        amount0.mul(uint256(sqrtPriceCurrentX96)).div(2 ** 96)
+                    uint256(liquidity) - amount0.mul(uint256(sqrtPriceCurrentX96)).div(2 ** 96)
                 )
             );
     }
@@ -50,8 +49,7 @@ library ALMMathLib {
         return
             toUint160(
                 uint256(liquidity).mul(uint256(sqrtPriceCurrentX96)).div(
-                    uint256(liquidity) +
-                        amount0.mul(uint256(sqrtPriceCurrentX96)).div(2 ** 96)
+                    uint256(liquidity) + amount0.mul(uint256(sqrtPriceCurrentX96)).div(2 ** 96)
                 )
             );
     }
@@ -61,13 +59,7 @@ library ALMMathLib {
         uint160 sqrtPriceNextX96,
         uint128 liquidity
     ) internal pure returns (uint256) {
-        return (
-            LiquidityAmounts.getAmount0ForLiquidity(
-                sqrtPriceNextX96,
-                sqrtPriceCurrentX96,
-                liquidity
-            )
-        );
+        return (LiquidityAmounts.getAmount0ForLiquidity(sqrtPriceNextX96, sqrtPriceCurrentX96, liquidity));
     }
 
     function getSwapAmount1(
@@ -75,26 +67,15 @@ library ALMMathLib {
         uint160 sqrtPriceNextX96,
         uint128 liquidity
     ) internal pure returns (uint256) {
-        return (
-            LiquidityAmounts.getAmount1ForLiquidity(
-                sqrtPriceNextX96,
-                sqrtPriceCurrentX96,
-                liquidity
-            )
-        );
+        return (LiquidityAmounts.getAmount1ForLiquidity(sqrtPriceNextX96, sqrtPriceCurrentX96, liquidity));
     }
 
-    function getLiquidityFromAmount1SqrtPriceX96(
+    function getLiquidityFromAmount0SqrtPriceX96(
         uint160 sqrtPriceUpperX96,
         uint160 sqrtPriceLowerX96,
-        uint256 amount1
+        uint256 amount0
     ) internal pure returns (uint128) {
-        return
-            LiquidityAmounts.getLiquidityForAmount1(
-                sqrtPriceUpperX96,
-                sqrtPriceLowerX96,
-                amount1
-            );
+        return LiquidityAmounts.getLiquidityForAmount0(sqrtPriceUpperX96, sqrtPriceLowerX96, amount0);
     }
 
     function getAmountsFromLiquiditySqrtPriceX96(
@@ -112,10 +93,7 @@ library ALMMathLib {
             );
     }
 
-    function calculateSwapFee(
-        int256 RV7,
-        int256 RV30
-    ) internal pure returns (uint256) {
+    function calculateSwapFee(int256 RV7, int256 RV30) internal pure returns (uint256) {
         int256 F0 = 3000000000000000; // 0.003
         int256 alpha = 2049000000000000000; // 2.049
         int256 minFee = 500000000000000; //0.05%
@@ -125,9 +103,7 @@ library ALMMathLib {
         return uint256(max(minFee, min(maxFess, (F0 * (1e18 + R)) / 1e18)));
     }
 
-    function getPriceFromSqrtPriceX96(
-        uint160 sqrtPriceX96
-    ) internal pure returns (uint256) {
+    function getPriceFromSqrtPriceX96(uint160 sqrtPriceX96) internal pure returns (uint256) {
         //const = 2^192
         uint256 price = uint256(sqrtPriceX96).pow(uint256(2e18)).mul(1e36).div(
             6277101735386680763835789423207666416102355444464034512896
@@ -135,11 +111,7 @@ library ALMMathLib {
         return uint256(1e30).div(price);
     }
 
-    function getWithdrawAmount(
-        uint256 shares,
-        uint256 totalSupply,
-        uint256 amount
-    ) internal pure returns (uint256) {
+    function getWithdrawAmount(uint256 shares, uint256 totalSupply, uint256 amount) internal pure returns (uint256) {
         uint256 ratio = shares.div(totalSupply);
         return amount.mul(ratio);
     }
@@ -150,9 +122,7 @@ library ALMMathLib {
         return TickMath.getSqrtPriceAtTick(tick);
     }
 
-    function getTickFromSqrtPrice(
-        uint160 sqrtPriceX96
-    ) internal pure returns (int24) {
+    function getTickFromSqrtPrice(uint160 sqrtPriceX96) internal pure returns (int24) {
         return TickMath.getTickAtSqrtPrice(sqrtPriceX96);
     }
 

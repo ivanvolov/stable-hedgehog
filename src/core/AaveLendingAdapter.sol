@@ -39,66 +39,35 @@ contract AaveLendingAdapter is Ownable, ILendingAdapter {
         authorizedCallers[_caller] = true;
     }
 
-    // ** Long market
+    // ** Lending market
 
-    function getBorrowedLong() external view returns (uint256) {
-        (, , address variableDebtTokenAddress) = getAssetAddresses(address(USDC));
-        return IERC20(variableDebtTokenAddress).balanceOf(address(this));
-    }
-
-    function borrowLong(uint256 amountUSDC) external onlyAuthorizedCaller {
-        IPool(getPool()).borrow(address(USDC), amountUSDC, 2, 0, address(this)); // Interest rate mode: 2 = variable
-        USDC.transfer(msg.sender, amountUSDC);
-    }
-
-    function repayLong(uint256 amountUSDC) external onlyAuthorizedCaller {
-        USDC.transferFrom(msg.sender, address(this), amountUSDC);
-        IPool(getPool()).repay(address(USDC), amountUSDC, 2, address(this));
-    }
-
-    function getCollateralLong() external view returns (uint256) {
-        (address aTokenAddress, , ) = getAssetAddresses(address(USDT));
-        return IERC20(aTokenAddress).balanceOf(address(this));
-    }
-
-    function removeCollateralLong(uint256 amountUSDT) external onlyAuthorizedCaller {
-        IPool(getPool()).withdraw(address(USDT), amountUSDT, msg.sender);
-    }
-
-    function addCollateralLong(uint256 amountUSDT) external onlyAuthorizedCaller {
-        USDT.transferFrom(msg.sender, address(this), amountUSDT);
-        IPool(getPool()).supply(address(USDT), amountUSDT, address(this), 0);
-    }
-
-    // ** Short market
-
-    function getBorrowedShort() external view returns (uint256) {
+    function getBorrowed() external view returns (uint256) {
         (, , address variableDebtTokenAddress) = getAssetAddresses(address(USDT));
         return IERC20(variableDebtTokenAddress).balanceOf(address(this));
     }
 
-    function borrowShort(uint256 amountUSDT) external onlyAuthorizedCaller {
-        IPool(getPool()).borrow(address(USDT), amountUSDT, 2, 0, address(this)); // Interest rate mode: 2 = variable
-        USDT.transfer(msg.sender, amountUSDT);
+    function borrow(uint256 amount) external onlyAuthorizedCaller {
+        IPool(getPool()).borrow(address(USDT), amount, 2, 0, address(this)); // Interest rate mode: 2 = variable
+        USDT.transfer(msg.sender, amount);
     }
 
-    function repayShort(uint256 amountUSDT) external onlyAuthorizedCaller {
-        USDT.transferFrom(msg.sender, address(this), amountUSDT);
-        IPool(getPool()).repay(address(USDT), amountUSDT, 2, address(this));
+    function repay(uint256 amount) external onlyAuthorizedCaller {
+        USDT.transferFrom(msg.sender, address(this), amount);
+        IPool(getPool()).repay(address(USDT), amount, 2, address(this));
     }
 
-    function getCollateralShort() external view returns (uint256) {
+    function getCollateral() external view returns (uint256) {
         (address aTokenAddress, , ) = getAssetAddresses(address(USDC));
         return IERC20(aTokenAddress).balanceOf(address(this));
     }
 
-    function removeCollateralShort(uint256 amountUSDC) external onlyAuthorizedCaller {
-        IPool(getPool()).withdraw(address(USDC), amountUSDC, msg.sender);
+    function removeCollateral(uint256 amount) external onlyAuthorizedCaller {
+        IPool(getPool()).withdraw(address(USDC), amount, msg.sender);
     }
 
-    function addCollateralShort(uint256 amountUSDC) external onlyAuthorizedCaller {
-        USDC.transferFrom(msg.sender, address(this), amountUSDC);
-        IPool(getPool()).supply(address(USDC), amountUSDC, address(this), 0);
+    function addCollateral(uint256 amount) external onlyAuthorizedCaller {
+        USDC.transferFrom(msg.sender, address(this), amount);
+        IPool(getPool()).supply(address(USDC), amount, address(this), 0);
     }
 
     // ** Helpers
@@ -110,10 +79,6 @@ contract AaveLendingAdapter is Ownable, ILendingAdapter {
     function getAssetPrice(address underlying) external view returns (uint256) {
         return IAaveOracle(provider.getPriceOracle()).getAssetPrice(underlying) * 1e10;
     }
-
-    function syncLong() external {}
-
-    function syncShort() external {}
 
     modifier onlyAuthorizedCaller() {
         require(authorizedCallers[msg.sender] == true, "Caller is not authorized V4 pool");
