@@ -26,8 +26,6 @@ interface IALM {
 
     function sqrtPriceCurrent() external view returns (uint160);
 
-    function refreshReserves() external;
-
     function tickLower() external view returns (int24);
 
     function tickUpper() external view returns (int24);

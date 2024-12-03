@@ -44,21 +44,18 @@ contract ALMTest is ALMTestBase {
     uint256 amountToDep = 1000 * 1e6;
 
     function test_deposit() public {
-        // deal(address(USDC), address(alice.addr), amountToDep);
-        // assertEq(hook.TVL(), 0);
-        // assertApproxEqAbs(USDC.balanceOf(alice.addr), amountToDep, 1e10);
-        // vm.prank(alice.addr);
-        // hook.deposit(alice.addr, amountToDep);
-        // assertEq(amountToDep, 0);
-        // assertApproxEqAbs(USDC.balanceOf(alice.addr), 0, 1e10);
-        // assertApproxEqAbs(shares, amountToDep, 1e10);
-        // assertEqBalanceStateZero(alice.addr);
-        // assertEqBalanceStateZero(address(hook));
-        // assertEqMorphoA(longMId, 0, 0, amountToDep);
-        // assertEqMorphoA(shortMId, 0, 0, 0);
-        // assertEq(hook.sqrtPriceCurrent(), 1182773400228691521900860642689024);
-        // assertEq(hook._calcCurrentPrice(), 4486999999999999769339);
-        // assertApproxEqAbs(hook.TVL(), amountToDep, 1e10);
+        deal(address(USDC), address(alice.addr), amountToDep);
+        assertEq(hook.TVL(), 0);
+        assertEq(hook.liquidity(), 0);
+        assertApproxEqAbs(USDC.balanceOf(alice.addr), amountToDep, 1e10);
+
+        vm.prank(alice.addr);
+        hook.deposit(alice.addr, amountToDep);
+
+        assertApproxEqAbs(USDC.balanceOf(alice.addr), 0, 1e10);
+        assertApproxEqAbs(hook.balanceOf(alice.addr), amountToDep, 1e10);
+        assertEq(hook.TVL(), 996756823);
+        assertEq(hook.liquidity(), 18529565944);
     }
 
     // function test_swap_price_up_in() public {

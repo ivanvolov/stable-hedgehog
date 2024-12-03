@@ -48,7 +48,7 @@ contract AaveLendingAdapter is Ownable, ILendingAdapter {
 
     function borrow(uint256 amount) external onlyAuthorizedCaller {
         IPool(getPool()).borrow(address(USDT), amount, 2, 0, address(this)); // Interest rate mode: 2 = variable
-        USDT.transfer(msg.sender, amount);
+        USDT.safeTransfer(msg.sender, amount);
     }
 
     function repay(uint256 amount) external onlyAuthorizedCaller {
