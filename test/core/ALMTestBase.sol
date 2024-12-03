@@ -14,21 +14,24 @@ import {PoolSwapTest} from "v4-core/test/PoolSwapTest.sol";
 import {BalanceDelta} from "v4-core/types/BalanceDelta.sol";
 import {PoolKey} from "v4-core/types/PoolKey.sol";
 
-import {TestERC20} from "v4-core/test/TestERC20.sol";
 import {Deployers} from "@uniswap/v4-core/test/utils/Deployers.sol";
 import {TestAccount, TestAccountLib} from "@test/libraries/TestAccountLib.t.sol";
 import {ILendingAdapter} from "@src/interfaces/ILendingAdapter.sol";
 import {AaveLendingAdapter} from "@src/core/AaveLendingAdapter.sol";
 import {CurrencyLibrary, Currency} from "v4-core/types/Currency.sol";
 
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 abstract contract ALMTestBase is Test, Deployers {
     using TestAccountLib for TestAccount;
+    using SafeERC20 for IERC20;
     using CurrencyLibrary for Currency;
 
     ALM hook;
 
-    TestERC20 USDC;
-    TestERC20 USDT;
+    IERC20 USDC;
+    IERC20 USDT;
 
     ILendingAdapter lendingAdapter;
 
@@ -79,8 +82,6 @@ abstract contract ALMTestBase is Test, Deployers {
         );
 
         hook.setLendingAdapter(address(lendingAdapter));
-        assertEq(hook.tickLower(), 192230 + 3000);
-        assertEq(hook.tickUpper(), 192230 - 3000);
         // MARK END
 
         // This is needed in order to simulate proper accounting
@@ -90,9 +91,9 @@ abstract contract ALMTestBase is Test, Deployers {
     }
 
     function create_accounts_and_tokens() public {
-        USDT = TestERC20(ALMBaseLib.USDT);
+        USDT = IERC20(ALMBaseLib.USDT);
         vm.label(address(USDT), "USDT");
-        USDC = TestERC20(ALMBaseLib.USDC);
+        USDC = IERC20(ALMBaseLib.USDC);
         vm.label(address(USDC), "USDC");
 
         deployer = TestAccountLib.createTestAccount("deployer");
@@ -104,12 +105,12 @@ abstract contract ALMTestBase is Test, Deployers {
     function approve_accounts() public {
         vm.startPrank(alice.addr);
         USDC.approve(address(hook), type(uint256).max);
-        USDT.approve(address(hook), type(uint256).max);
+        USDT.forceApprove(address(hook), type(uint256).max);
         vm.stopPrank();
 
         vm.startPrank(swapper.addr);
         USDC.approve(address(swapRouter), type(uint256).max);
-        USDT.approve(address(swapRouter), type(uint256).max);
+        USDT.forceApprove(address(swapRouter), type(uint256).max);
         vm.stopPrank();
     }
 

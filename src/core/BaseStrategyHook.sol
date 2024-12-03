@@ -15,14 +15,17 @@ import {PoolKey} from "v4-core/types/PoolKey.sol";
 import {BalanceDelta} from "v4-core/types/BalanceDelta.sol";
 import {BaseHook} from "v4-periphery/src/base/hooks/BaseHook.sol";
 
-import {IERC20Minimal as IERC20} from "v4-core/interfaces/external/IERC20Minimal.sol";
 import {IPoolManager} from "v4-core/interfaces/IPoolManager.sol";
 import {IALM} from "@src/interfaces/IALM.sol";
 
 import {ILendingAdapter} from "@src/interfaces/ILendingAdapter.sol";
 import {ALMMathLib} from "@src/libraries/ALMMathLib.sol";
 
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 abstract contract BaseStrategyHook is BaseHook, IALM {
+    using SafeERC20 for IERC20;
     using CurrencySettler for Currency;
     using PoolIdLibrary for PoolKey;
 
@@ -58,11 +61,11 @@ abstract contract BaseStrategyHook is BaseHook, IALM {
 
     function setLendingAdapter(address _lendingAdapter) external onlyHookDeployer {
         if (address(lendingAdapter) != address(0)) {
-            USDT.approve(address(lendingAdapter), 0);
-            USDC.approve(address(lendingAdapter), 0);
+            USDT.forceApprove(address(lendingAdapter), 0);
+            USDC.forceApprove(address(lendingAdapter), 0);
         }
         lendingAdapter = ILendingAdapter(_lendingAdapter);
-        USDT.approve(address(lendingAdapter), type(uint256).max);
+        USDT.forceApprove(address(lendingAdapter), type(uint256).max);
         USDC.approve(address(lendingAdapter), type(uint256).max);
     }
 

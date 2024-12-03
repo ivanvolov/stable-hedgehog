@@ -19,7 +19,11 @@ import {SafeCallback} from "v4-periphery/src/base/SafeCallback.sol";
 import {IPoolManager} from "v4-core/interfaces/IPoolManager.sol";
 import {IALM} from "@src/interfaces/IALM.sol";
 
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 contract ALMTest is ALMTestBase {
+    using SafeERC20 for IERC20;
     using PoolIdLibrary for PoolId;
     using CurrencyLibrary for Currency;
 
@@ -44,7 +48,7 @@ contract ALMTest is ALMTestBase {
 
         // // ** Approve to Morpho
         // vm.startPrank(alice.addr);
-        // USDT.approve(address(lendingAdapter), type(uint256).max);
+        // USDT.forceApprove(address(lendingAdapter), type(uint256).max);
         // USDC.approve(address(lendingAdapter), type(uint256).max);
 
         // // ** Add collateral

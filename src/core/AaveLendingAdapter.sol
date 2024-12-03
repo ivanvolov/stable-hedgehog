@@ -5,7 +5,6 @@ import "forge-std/console.sol";
 
 import "@src/interfaces/ILendingAdapter.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {IERC20Minimal as IERC20} from "v4-core/interfaces/external/IERC20Minimal.sol";
 import {ILendingAdapter} from "@src/interfaces/ILendingAdapter.sol";
 
 import {IPool} from "@aave-core-v3/contracts/interfaces/IPool.sol";
@@ -13,7 +12,12 @@ import {IAaveOracle} from "@aave-core-v3/contracts/interfaces/IAaveOracle.sol";
 import {IPoolAddressesProvider} from "@aave-core-v3/contracts/interfaces/IPoolAddressesProvider.sol";
 import {IPoolDataProvider} from "@aave-core-v3/contracts/interfaces/IPoolDataProvider.sol";
 
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 contract AaveLendingAdapter is Ownable, ILendingAdapter {
+    using SafeERC20 for IERC20;
+
     //aaveV3
     IPoolAddressesProvider constant provider = IPoolAddressesProvider(0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e);
 
@@ -23,7 +27,7 @@ contract AaveLendingAdapter is Ownable, ILendingAdapter {
     mapping(address => bool) public authorizedCallers;
 
     constructor() Ownable(msg.sender) {
-        USDT.approve(getPool(), type(uint256).max);
+        USDT.forceApprove(getPool(), type(uint256).max);
         USDC.approve(getPool(), type(uint256).max);
     }
 
