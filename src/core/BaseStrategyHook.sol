@@ -17,9 +17,7 @@ import {BaseHook} from "v4-periphery/src/base/hooks/BaseHook.sol";
 
 import {IERC20Minimal as IERC20} from "v4-core/interfaces/external/IERC20Minimal.sol";
 import {IPoolManager} from "v4-core/interfaces/IPoolManager.sol";
-import {IWETH} from "@forks/IWETH.sol";
 import {IALM} from "@src/interfaces/IALM.sol";
-import {MorphoBalancesLib} from "@forks/morpho/libraries/MorphoBalancesLib.sol";
 
 import {ILendingAdapter} from "@src/interfaces/ILendingAdapter.sol";
 import {ALMMathLib} from "@src/libraries/ALMMathLib.sol";
@@ -31,8 +29,8 @@ abstract contract BaseStrategyHook is BaseHook, IALM {
     ILendingAdapter public lendingAdapter;
     address public rebalanceAdapter;
 
-    IWETH WETH = IWETH(ALMBaseLib.WETH);
     IERC20 USDC = IERC20(ALMBaseLib.USDC);
+    IERC20 USDT = IERC20(ALMBaseLib.USDT);
 
     uint128 public liquidity;
     uint160 public sqrtPriceCurrent;
@@ -60,11 +58,11 @@ abstract contract BaseStrategyHook is BaseHook, IALM {
 
     function setLendingAdapter(address _lendingAdapter) external onlyHookDeployer {
         if (address(lendingAdapter) != address(0)) {
-            WETH.approve(address(lendingAdapter), 0);
+            USDT.approve(address(lendingAdapter), 0);
             USDC.approve(address(lendingAdapter), 0);
         }
         lendingAdapter = ILendingAdapter(_lendingAdapter);
-        WETH.approve(address(lendingAdapter), type(uint256).max);
+        USDT.approve(address(lendingAdapter), type(uint256).max);
         USDC.approve(address(lendingAdapter), type(uint256).max);
     }
 

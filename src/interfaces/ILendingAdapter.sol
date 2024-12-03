@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.25;
 
-import {Id} from "@forks/morpho/IMorpho.sol";
-
 interface ILendingAdapter {
     // ** Long market
     function getBorrowedLong() external view returns (uint256);
@@ -13,16 +11,16 @@ interface ILendingAdapter {
 
     function getCollateralLong() external view returns (uint256);
 
-    function removeCollateralLong(uint256 amountWETH) external;
+    function removeCollateralLong(uint256 amount) external;
 
-    function addCollateralLong(uint256 amountWETH) external;
+    function addCollateralLong(uint256 amount) external;
 
     // ** Short market
     function getBorrowedShort() external view returns (uint256);
 
-    function borrowShort(uint256 amountWETH) external;
+    function borrowShort(uint256 amount) external;
 
-    function repayShort(uint256 amountWETH) external;
+    function repayShort(uint256 amount) external;
 
     function getCollateralShort() external view returns (uint256);
 

@@ -18,11 +18,8 @@ import {CurrencySettler} from "@uniswap/v4-core/test/utils/CurrencySettler.sol";
 import {ERC20} from "permit2/lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import {IERC20} from "permit2/lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {BaseStrategyHook} from "@src/core/BaseStrategyHook.sol";
-import {AggregatorV3Interface} from "@forks/morpho-oracles/AggregatorV3Interface.sol";
 
 import {IPoolManager} from "v4-core/interfaces/IPoolManager.sol";
-import {Position as MorphoPosition, Id, Market} from "@forks/morpho/IMorpho.sol";
-import {IRebalanceAdapter} from "@src/interfaces/IRebalanceAdapter.sol";
 
 /// @title ALM
 /// @author IVikkk
@@ -61,7 +58,7 @@ contract ALM is BaseStrategyHook, ERC20 {
         refreshReserves();
         (uint128 deltaL, uint256 amountIn, uint256 shares) = _calcDepositParams(amount);
 
-        WETH.transferFrom(msg.sender, address(this), amountIn);
+        USDC.transferFrom(msg.sender, address(this), amountIn);
         // lendingAdapter.addCollateral(WETH.balanceOf(address(this)));
         liquidity = liquidity + deltaL;
 
@@ -292,30 +289,11 @@ contract ALM is BaseStrategyHook, ERC20 {
         shares = _sharePrice == 0 ? _amount : (_amount * 1e18) / _sharePrice;
     }
 
-    // TODO: Notice * I'm not using it now in the code at all.
     function adjustForFeesDown(uint256 amount) public pure returns (uint256 amountAdjusted) {
-        // console.log("> amount specified", amount);
-        amountAdjusted = amount - (amount * getSwapFees()) / 1e18;
-        // console.log("> amount adjusted ", amountAdjusted);
+        return amountAdjusted;
     }
 
-    // TODO: Notice * I'm not using it now in the code at all.
     function adjustForFeesUp(uint256 amount) public pure returns (uint256 amountAdjusted) {
-        // console.log("> amount specified", amount);
-        amountAdjusted = amount + (amount * getSwapFees()) / 1e18;
-        // console.log("> amount adjusted ", amountAdjusted);
-    }
-
-    function getSwapFees() public pure returns (uint256) {
-        // TODO: do fees properly. Now it will be similar to the test pull (0.05)
-        // return 50000000000000000;
-        return 0;
-        // (, int256 RV7, , , ) = AggregatorV3Interface(
-        //     ALMBaseLib.CHAINLINK_7_DAYS_VOL
-        // ).latestRoundData();
-        // (, int256 RV30, , , ) = AggregatorV3Interface(
-        //     ALMBaseLib.CHAINLINK_30_DAYS_VOL
-        // ).latestRoundData();
-        // return ALMMathLib.calculateSwapFee(RV7 * 1e18, RV30 * 1e18);
+        return amountAdjusted;
     }
 }
