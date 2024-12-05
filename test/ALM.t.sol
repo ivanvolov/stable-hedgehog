@@ -56,6 +56,9 @@ contract ALMTest is ALMTestBase {
         assertApproxEqAbs(hook.balanceOf(alice.addr), amountToDep, 1e10);
         assertEq(hook.TVL(), 996756823);
         assertEq(hook.liquidity(), 18529565944);
+
+        assertApproxEqAbs(lendingAdapter.getCollateral(), 2998556822, 10);
+        assertApproxEqAbs(lendingAdapter.getBorrowed(), 2001267479, 10);
     }
 
     // function test_swap_price_up_in() public {

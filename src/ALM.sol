@@ -141,71 +141,61 @@ contract ALM is BaseStrategyHook, ERC20 {
         IPoolManager.SwapParams calldata params,
         PoolKey calldata key
     ) internal returns (BeforeSwapDelta) {
-        refreshReserves();
-
-        // if (params.zeroForOne) {
-        //     console.log("> WETH price go up...");
-        //     // If user is selling Token 0 and buying Token 1 (USDC => WETH)
-        //     // TLDR: Here we got USDC and save it on balance. And just give our ETH back to USER.
-        //     (
-        //         BeforeSwapDelta beforeSwapDelta,
-        //         uint256 wethOut,
-        //         uint256 usdcIn,
-        //         uint160 sqrtPriceNext
-        //     ) = getZeroForOneDeltas(params.amountSpecified);
-
-        //     // They will be sending Token 0 to the PM, creating a debit of Token 0 in the PM
-        //     // We will take actual ERC20 Token 0 from the PM and keep it in the hook and create an equivalent credit for that Token 0 since it is ours!
-        //     key.currency0.take(poolManager, address(this), usdcIn, false);
-        //     repayAndSupply(usdcIn); // Notice: repaying if needed to reduce lending interest.
-
-        //     // We don't have token 1 on our account yet, so we need to withdraw WETH from the Morpho.
-        //     // We also need to create a debit so user could take it back from the PM.
-        //     lendingAdapter.removeCollateral(wethOut);
-        //     key.currency1.settle(poolManager, address(this), wethOut, false);
-
-        //     sqrtPriceCurrent = sqrtPriceNext;
-        //     return beforeSwapDelta;
-        // } else {
-        //     console.log("> WETH price go down...");
-        //     // If user is selling Token 1 and buying Token 0 (WETH => USDC)
-        //     // TLDR: Here we borrow USDC at Morpho and give it back.
-
-        //     (
-        //         BeforeSwapDelta beforeSwapDelta,
-        //         uint256 wethIn,
-        //         uint256 usdcOut,
-        //         uint160 sqrtPriceNext
-        //     ) = getOneForZeroDeltas(params.amountSpecified);
-
-        //     // Put extra WETH to Morpho
-        //     key.currency1.take(poolManager, address(this), wethIn, false);
-        //     lendingAdapter.addCollateral(wethIn);
-
-        //     // Ensure we have enough USDC. Redeem from reserves and borrow if needed.
-        //     redeemAndBorrow(usdcOut);
-        //     key.currency0.settle(poolManager, address(this), usdcOut, false);
-
-        //     sqrtPriceCurrent = sqrtPriceNext;
-        //     return beforeSwapDelta;
-        // }
+        if (params.zeroForOne) {
+            console.log(">USDC->USDT");
+            // TLDR: Here we got USDC and save it on balance. And just give our ETH back to USER.
+            (
+                BeforeSwapDelta beforeSwapDelta,
+                uint256 usdtOut,
+                uint256 usdcIn,
+                uint160 sqrtPriceNext
+            ) = getZeroForOneDeltas(params.amountSpecified);
+            // They will be sending Token 0 to the PM, creating a debit of Token 0 in the PM
+            // We will take actual ERC20 Token 0 from the PM and keep it in the hook and create an equivalent credit for that Token 0 since it is ours!
+            key.currency0.take(poolManager, address(this), usdcIn, false);
+            repayAndSupply(usdcIn); // Notice: repaying if needed to reduce lending interest.
+            // We don't have token 1 on our account yet, so we need to withdraw WETH from the Morpho.
+            // We also need to create a debit so user could take it back from the PM.
+            lendingAdapter.removeCollateral(usdtOut);
+            key.currency1.settle(poolManager, address(this), usdtOut, false);
+            sqrtPriceCurrent = sqrtPriceNext;
+            return beforeSwapDelta;
+        } else {
+            console.log("> WETH price go down...");
+            // If user is selling Token 1 and buying Token 0 (WETH => USDC)
+            // TLDR: Here we borrow USDC at Morpho and give it back.
+            (
+                BeforeSwapDelta beforeSwapDelta,
+                uint256 usdtIn,
+                uint256 usdcOut,
+                uint160 sqrtPriceNext
+            ) = getOneForZeroDeltas(params.amountSpecified);
+            // Put extra WETH to Morpho
+            key.currency1.take(poolManager, address(this), usdtIn, false);
+            lendingAdapter.addCollateral(usdtIn);
+            // Ensure we have enough USDC. Redeem from reserves and borrow if needed.
+            redeemAndBorrow(usdcOut);
+            key.currency0.settle(poolManager, address(this), usdcOut, false);
+            sqrtPriceCurrent = sqrtPriceNext;
+            return beforeSwapDelta;
+        }
     }
 
     // --- Internal and view functions ---
 
     function getZeroForOneDeltas(
         int256 amountSpecified
-    ) internal view returns (BeforeSwapDelta beforeSwapDelta, uint256 wethOut, uint256 usdcIn, uint160 sqrtPriceNext) {
+    ) internal view returns (BeforeSwapDelta beforeSwapDelta, uint256 usdtOut, uint256 usdcIn, uint160 sqrtPriceNext) {
         if (amountSpecified > 0) {
             // console.log("> amount specified positive");
-            wethOut = uint256(amountSpecified);
+            usdtOut = uint256(amountSpecified);
 
-            sqrtPriceNext = ALMMathLib.sqrtPriceNextX96ZeroForOneOut(sqrtPriceCurrent, liquidity, wethOut);
+            sqrtPriceNext = ALMMathLib.sqrtPriceNextX96ZeroForOneOut(sqrtPriceCurrent, liquidity, usdtOut);
 
             usdcIn = ALMMathLib.getSwapAmount0(sqrtPriceCurrent, sqrtPriceNext, liquidity);
 
             beforeSwapDelta = toBeforeSwapDelta(
-                -int128(uint128(wethOut)), // specified token = token1
+                -int128(uint128(usdtOut)), // specified token = token1
                 int128(uint128(usdcIn)) // unspecified token = token0
             );
         } else {
@@ -214,40 +204,40 @@ contract ALM is BaseStrategyHook, ERC20 {
 
             sqrtPriceNext = ALMMathLib.sqrtPriceNextX96ZeroForOneIn(sqrtPriceCurrent, liquidity, usdcIn);
 
-            wethOut = ALMMathLib.getSwapAmount1(sqrtPriceCurrent, sqrtPriceNext, liquidity);
+            usdtOut = ALMMathLib.getSwapAmount1(sqrtPriceCurrent, sqrtPriceNext, liquidity);
 
             beforeSwapDelta = toBeforeSwapDelta(
                 int128(uint128(usdcIn)), // specified token = token0
-                -int128(uint128(wethOut)) // unspecified token = token1
+                -int128(uint128(usdtOut)) // unspecified token = token1
             );
         }
     }
 
     function getOneForZeroDeltas(
         int256 amountSpecified
-    ) internal view returns (BeforeSwapDelta beforeSwapDelta, uint256 wethIn, uint256 usdcOut, uint160 sqrtPriceNext) {
+    ) internal view returns (BeforeSwapDelta beforeSwapDelta, uint256 usdtIn, uint256 usdcOut, uint160 sqrtPriceNext) {
         if (amountSpecified > 0) {
             // console.log("> amount specified positive");
             usdcOut = uint256(amountSpecified);
 
             sqrtPriceNext = ALMMathLib.sqrtPriceNextX96OneForZeroOut(sqrtPriceCurrent, liquidity, usdcOut);
 
-            wethIn = ALMMathLib.getSwapAmount1(sqrtPriceCurrent, sqrtPriceNext, liquidity);
+            usdtIn = ALMMathLib.getSwapAmount1(sqrtPriceCurrent, sqrtPriceNext, liquidity);
 
             beforeSwapDelta = toBeforeSwapDelta(
                 -int128(uint128(usdcOut)), // specified token = token0
-                int128(uint128(wethIn)) // unspecified token = token1
+                int128(uint128(usdtIn)) // unspecified token = token1
             );
         } else {
             // console.log("> amount specified negative");
-            wethIn = uint256(-amountSpecified);
+            usdtIn = uint256(-amountSpecified);
 
-            sqrtPriceNext = ALMMathLib.sqrtPriceNextX96OneForZeroIn(sqrtPriceCurrent, liquidity, wethIn);
+            sqrtPriceNext = ALMMathLib.sqrtPriceNextX96OneForZeroIn(sqrtPriceCurrent, liquidity, usdtIn);
 
             usdcOut = ALMMathLib.getSwapAmount0(sqrtPriceCurrent, sqrtPriceNext, liquidity);
 
             beforeSwapDelta = toBeforeSwapDelta(
-                int128(uint128(wethIn)), // specified token = token1
+                int128(uint128(usdtIn)), // specified token = token1
                 -int128(uint128(usdcOut)) // unspecified token = token0
             );
         }
