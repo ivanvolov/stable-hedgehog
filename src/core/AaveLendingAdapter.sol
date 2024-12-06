@@ -52,7 +52,7 @@ contract AaveLendingAdapter is Ownable, ILendingAdapter {
     }
 
     function repay(uint256 amount) external onlyAuthorizedCaller {
-        USDT.transferFrom(msg.sender, address(this), amount);
+        USDT.safeTransferFrom(msg.sender, address(this), amount);
         IPool(getPool()).repay(address(USDT), amount, 2, address(this));
     }
 

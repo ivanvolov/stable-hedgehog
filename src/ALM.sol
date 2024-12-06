@@ -13,7 +13,7 @@ import {BalanceDelta} from "v4-core/types/BalanceDelta.sol";
 import {LiquidityAmounts} from "v4-core/../test/utils/LiquidityAmounts.sol";
 import {BeforeSwapDelta, toBeforeSwapDelta} from "v4-core/types/BeforeSwapDelta.sol";
 import {Currency} from "v4-core/types/Currency.sol";
-import {CurrencySettler} from "@uniswap/v4-core/test/utils/CurrencySettler.sol";
+import {CurrencySettler} from "@forks/CurrencySettler.sol";
 
 import {ERC20} from "permit2/lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import {BaseStrategyHook} from "@src/core/BaseStrategyHook.sol";
@@ -142,41 +142,47 @@ contract ALM is BaseStrategyHook, ERC20 {
         PoolKey calldata key
     ) internal returns (BeforeSwapDelta) {
         if (params.zeroForOne) {
-            console.log(">USDC->USDT");
-            // TLDR: Here we got USDC and save it on balance. And just give our ETH back to USER.
+            console.log("> USDC->USDT");
+            // TLDR: 1) increase USDT debt 2) USDC to collateral
+
             (
                 BeforeSwapDelta beforeSwapDelta,
                 uint256 usdtOut,
                 uint256 usdcIn,
                 uint160 sqrtPriceNext
             ) = getZeroForOneDeltas(params.amountSpecified);
-            // They will be sending Token 0 to the PM, creating a debit of Token 0 in the PM
-            // We will take actual ERC20 Token 0 from the PM and keep it in the hook and create an equivalent credit for that Token 0 since it is ours!
+
             key.currency0.take(poolManager, address(this), usdcIn, false);
-            repayAndSupply(usdcIn); // Notice: repaying if needed to reduce lending interest.
-            // We don't have token 1 on our account yet, so we need to withdraw WETH from the Morpho.
+            lendingAdapter.addCollateral(usdcIn);
+            // We don't have token 1 on our account yet, so we need to borrow USDT.
             // We also need to create a debit so user could take it back from the PM.
-            lendingAdapter.removeCollateral(usdtOut);
+            console.log(USDT.balanceOf(address(this)));
+            lendingAdapter.borrow(usdtOut);
+            console.log("!");
+            console.log(USDT.balanceOf(address(this)));
             key.currency1.settle(poolManager, address(this), usdtOut, false);
+            console.log("!");
             sqrtPriceCurrent = sqrtPriceNext;
             return beforeSwapDelta;
         } else {
-            console.log("> WETH price go down...");
-            // If user is selling Token 1 and buying Token 0 (WETH => USDC)
-            // TLDR: Here we borrow USDC at Morpho and give it back.
+            console.log("> USDT->USDC");
+            // TLDR: 1) decrease USDT debt 2) USDC from collateral
+
             (
                 BeforeSwapDelta beforeSwapDelta,
                 uint256 usdtIn,
                 uint256 usdcOut,
                 uint160 sqrtPriceNext
             ) = getOneForZeroDeltas(params.amountSpecified);
-            // Put extra WETH to Morpho
+
+            // Repay USDC
             key.currency1.take(poolManager, address(this), usdtIn, false);
-            lendingAdapter.addCollateral(usdtIn);
-            // Ensure we have enough USDC. Redeem from reserves and borrow if needed.
-            redeemAndBorrow(usdcOut);
+            lendingAdapter.repay(usdtIn);
+
+            lendingAdapter.removeCollateral(usdcOut);
             key.currency0.settle(poolManager, address(this), usdcOut, false);
             sqrtPriceCurrent = sqrtPriceNext;
+            console.log("4");
             return beforeSwapDelta;
         }
     }
@@ -243,23 +249,6 @@ contract ALM is BaseStrategyHook, ERC20 {
         }
     }
 
-    function redeemAndBorrow(uint256 usdcOut) internal {
-        // uint256 withdrawAmount = ALMMathLib.min(lendingAdapter.getSupplied(), usdcOut);
-        // if (withdrawAmount > 0) lendingAdapter.withdraw(withdrawAmount);
-        // if (usdcOut > withdrawAmount) lendingAdapter.borrow(usdcOut - withdrawAmount);
-    }
-
-    function repayAndSupply(uint256 amountUSDC) internal {
-        // uint256 repayAmount = ALMMathLib.min(lendingAdapter.getBorrowed(), amountUSDC);
-        // if (repayAmount > 0) lendingAdapter.repay(repayAmount);
-        // if (amountUSDC > repayAmount) lendingAdapter.supply(amountUSDC - repayAmount);
-    }
-
-    function refreshReserves() public {
-        // lendingAdapter.syncLong();
-        // lendingAdapter.syncShort();
-    }
-
     // ---- Math functions
 
     function _USDCtoUSDT(uint256 amount) internal view returns (uint256) {
@@ -280,15 +269,6 @@ contract ALM is BaseStrategyHook, ERC20 {
         return usdcColl - _USDTtoUSDC(usdtDebt);
     }
 
-    function sharePrice() public view returns (uint256) {
-        if (totalSupply() == 0) return 0;
-        return (TVL() * 1e18) / totalSupply();
-    }
-
-    function _calcCurrentPrice() public view returns (uint256) {
-        return ALMMathLib.getPriceFromSqrtPriceX96(sqrtPriceCurrent);
-    }
-
     function getCurrentLiquidity() public view returns (uint128 liquidity) {
         uint256 amount0 = lendingAdapter.getCollateral();
         liquidity = ALMMathLib.getLiquidityFromAmount0SqrtPriceX96(
@@ -296,13 +276,5 @@ contract ALM is BaseStrategyHook, ERC20 {
             sqrtPriceCurrent,
             amount0
         );
-    }
-
-    function adjustForFeesDown(uint256 amount) public pure returns (uint256) {
-        return amount;
-    }
-
-    function adjustForFeesUp(uint256 amount) public pure returns (uint256) {
-        return amount;
     }
 }

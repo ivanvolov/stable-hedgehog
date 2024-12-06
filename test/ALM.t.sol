@@ -61,24 +61,24 @@ contract ALMTest is ALMTestBase {
         assertApproxEqAbs(lendingAdapter.getBorrowed(), 2001267479, 10);
     }
 
-    // function test_swap_price_up_in() public {
-    //     uint256 usdcToSwap = 4487 * 1e6;
-    //     test_deposit();
+    function test_swap_price_up_in() public {
+        uint256 usdcToSwap = 100 * 1e6;
+        test_deposit();
 
-    //     deal(address(USDC), address(swapper.addr), usdcToSwap);
-    //     assertEqBalanceState(swapper.addr, 0, usdcToSwap);
+        deal(address(USDC), address(swapper.addr), usdcToSwap);
+        assertEqBalanceState(swapper.addr, 0, usdcToSwap);
 
-    //     (, uint256 deltaUSDT) = swapUSDC_USDT_In(usdcToSwap);
-    //     assertApproxEqAbs(deltaUSDT, 948744443889899008, 1e1);
+        (, uint256 deltaUSDT) = swapUSDC_USDT_In(usdcToSwap);
+        // assertApproxEqAbs(deltaUSDT, 1000 * 1e6, 1e1);
 
-    //     assertEqBalanceState(swapper.addr, deltaUSDT, 0);
-    //     assertEqBalanceState(address(hook), 0, 0);
+        // assertEqBalanceState(swapper.addr, deltaUSDT, 0);
+        // assertEqBalanceState(address(hook), 0, 0);
 
-    //     assertEqMorphoA(shortMId, usdcToSwap, 0, 0);
-    //     assertEqMorphoA(longMId, 0, 0, amountToDep - deltaUSDT);
+        // assertEqMorphoA(shortMId, usdcToSwap, 0, 0);
+        // assertEqMorphoA(longMId, 0, 0, amountToDep - deltaUSDT);
 
-    //     assertEq(hook.sqrtPriceCurrent(), 1181210201945000124313491613764168);
-    // }
+        // assertEq(hook.sqrtPriceCurrent(), 1181210201945000124313491613764168);
+    }
 
     // function test_swap_price_up_out() public {
     //     uint256 usdcToSwapQ = 4469867134; // this should be get from quoter
@@ -100,24 +100,24 @@ contract ALMTest is ALMTestBase {
     //     assertEq(hook.sqrtPriceCurrent(), 1184338667228746981679537543072454);
     // }
 
-    // function test_swap_price_down_in() public {
-    //     uint256 usdtToSwap = 1 ether;
-    //     test_deposit();
+    function test_swap_price_down_in() public {
+        uint256 usdtToSwap = 100 * 1e6;
+        test_deposit();
 
-    //     deal(address(USDT), address(swapper.addr), usdtToSwap);
-    //     assertEqBalanceState(swapper.addr, usdtToSwap, 0);
+        deal(address(USDT), address(swapper.addr), usdtToSwap);
+        assertEqBalanceState(swapper.addr, usdtToSwap, 0);
 
-    //     (uint256 deltaUSDC, ) = swapUSDT_USDC_In(usdtToSwap);
-    //     assertEq(deltaUSDC, 4257016319);
+        (uint256 deltaUSDC, ) = swapUSDT_USDC_In(usdtToSwap);
+        // assertEq(deltaUSDC, 4257016319);
 
-    //     assertEqBalanceState(swapper.addr, 0, deltaUSDC);
-    //     assertEqBalanceState(address(hook), 0, 0);
+        // assertEqBalanceState(swapper.addr, 0, deltaUSDC);
+        // assertEqBalanceState(address(hook), 0, 0);
 
-    //     assertEqMorphoA(shortMId, 0, 0, 0);
-    //     assertEqMorphoA(longMId, 0, deltaUSDC, amountToDep + usdtToSwap);
+        // assertEqMorphoA(shortMId, 0, 0, 0);
+        // assertEqMorphoA(longMId, 0, deltaUSDC, amountToDep + usdtToSwap);
 
-    //     assertEq(hook.sqrtPriceCurrent(), 1184338667228746981679537543072454);
-    // }
+        // assertEq(hook.sqrtPriceCurrent(), 1184338667228746981679537543072454);
+    }
 
     // function test_swap_price_down_out() public {
     //     uint256 usdtToSwapQ = 1048539297596844510; // this should be get from quoter
