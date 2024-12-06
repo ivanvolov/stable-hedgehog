@@ -80,25 +80,25 @@ contract ALMTest is ALMTestBase {
         assertEq(hook.sqrtPriceCurrent(), 78802880669457038464881639888);
     }
 
-    // function test_swap_price_up_out() public {
-    //     uint256 usdcToSwapQ = 4469867134; // this should be get from quoter
-    //     uint256 usdtToGetFSwap = 1 ether;
-    //     test_deposit();
+    function test_swap_price_up_out() public {
+        uint256 usdcToSwapQ = 100542606; // this should be get from quoter
+        uint256 usdtToGetFSwap = 100 * 1e6;
+        test_deposit();
 
-    //     deal(address(USDC), address(swapper.addr), usdcToSwapQ);
-    //     assertEqBalanceState(swapper.addr, 0, usdcToSwapQ);
+        deal(address(USDC), address(swapper.addr), usdcToSwapQ);
+        assertEqBalanceState(swapper.addr, 0, usdcToSwapQ);
 
-    //     (, uint256 deltaUSDT) = swapUSDC_USDT_Out(usdtToGetFSwap);
-    //     assertApproxEqAbs(deltaUSDT, 1 ether, 1e1);
+        (, uint256 deltaUSDT) = swapUSDC_USDT_Out(usdtToGetFSwap);
+        assertApproxEqAbs(deltaUSDT, usdtToGetFSwap, 1e1);
 
-    //     assertEqBalanceState(swapper.addr, deltaUSDT, 0);
-    //     assertEqBalanceState(address(hook), 0, 0);
+        assertEqBalanceState(swapper.addr, deltaUSDT, 0);
+        assertEqBalanceState(address(hook), 0, 0);
 
-    //     assertEqMorphoA(shortMId, usdcToSwapQ, 0, 0);
-    //     assertEqMorphoA(longMId, 0, 0, amountToDep - deltaUSDT);
+        assertApproxEqAbs(lendingAdapter.getCollateral(), 3099099428, 10);
+        assertApproxEqAbs(lendingAdapter.getBorrowed(), 2101267478, 10);
 
-    //     assertEq(hook.sqrtPriceCurrent(), 1184338667228746981679537543072454);
-    // }
+        assertEq(hook.sqrtPriceCurrent(), 78800585512440833154126931954);
+    }
 
     function test_swap_price_down_in() public {
         uint256 usdtToSwap = 100 * 1e6;
@@ -139,50 +139,47 @@ contract ALMTest is ALMTestBase {
     //     assertEq(hook.sqrtPriceCurrent(), 1181128042874516412352801494904863);
     // }
 
-    // function test_accessability() public {
-    //     vm.expectRevert(SafeCallback.NotPoolManager.selector);
-    //     hook.afterInitialize(address(0), key, 0, 0, "");
+    function test_accessability() public {
+        vm.expectRevert(SafeCallback.NotPoolManager.selector);
+        hook.afterInitialize(address(0), key, 0, 0, "");
 
-    //     vm.expectRevert(IALM.AddLiquidityThroughHook.selector);
-    //     hook.beforeAddLiquidity(address(0), key, IPoolManager.ModifyLiquidityParams(0, 0, 0, ""), "");
+        vm.expectRevert(IALM.AddLiquidityThroughHook.selector);
+        hook.beforeAddLiquidity(address(0), key, IPoolManager.ModifyLiquidityParams(0, 0, 0, ""), "");
 
-    //     PoolKey memory failedKey = key;
-    //     failedKey.tickSpacing = 3;
+        PoolKey memory failedKey = key;
+        failedKey.tickSpacing = 3;
 
-    //     vm.expectRevert(IALM.UnauthorizedPool.selector);
-    //     hook.beforeAddLiquidity(address(0), failedKey, IPoolManager.ModifyLiquidityParams(0, 0, 0, ""), "");
+        vm.expectRevert();
+        hook.beforeAddLiquidity(address(0), failedKey, IPoolManager.ModifyLiquidityParams(0, 0, 0, ""), "");
 
-    //     vm.expectRevert(SafeCallback.NotPoolManager.selector);
-    //     hook.beforeSwap(address(0), key, IPoolManager.SwapParams(true, 0, 0), "");
+        vm.expectRevert();
+        hook.beforeSwap(address(0), key, IPoolManager.SwapParams(true, 0, 0), "");
 
-    //     vm.expectRevert(IALM.UnauthorizedPool.selector);
-    //     hook.beforeSwap(address(0), failedKey, IPoolManager.SwapParams(true, 0, 0), "");
-    // }
+        vm.expectRevert();
+        hook.beforeSwap(address(0), failedKey, IPoolManager.SwapParams(true, 0, 0), "");
+    }
 
-    // function test_pause() public {
-    //     vm.prank(deployer.addr);
-    //     hook.setPaused(true);
+    function test_pause() public {
+        vm.prank(deployer.addr);
+        hook.setPaused(true);
 
-    //     vm.expectRevert(IALM.ContractPaused.selector);
-    //     hook.deposit(address(0), 0);
+        vm.expectRevert(IALM.ContractPaused.selector);
+        hook.deposit(address(0), 0);
 
-    //     vm.expectRevert(IALM.ContractPaused.selector);
-    //     hook.withdraw(deployer.addr, 0);
+        vm.prank(address(manager));
+        vm.expectRevert(IALM.ContractPaused.selector);
+        hook.beforeSwap(address(0), key, IPoolManager.SwapParams(true, 0, 0), "");
+    }
 
-    //     vm.prank(address(manager));
-    //     vm.expectRevert(IALM.ContractPaused.selector);
-    //     hook.beforeSwap(address(0), key, IPoolManager.SwapParams(true, 0, 0), "");
-    // }
+    function test_shutdown() public {
+        vm.prank(deployer.addr);
+        hook.setShutdown(true);
 
-    // function test_shutdown() public {
-    //     vm.prank(deployer.addr);
-    //     hook.setShutdown(true);
+        vm.expectRevert(IALM.ContractShutdown.selector);
+        hook.deposit(deployer.addr, 0);
 
-    //     vm.expectRevert(IALM.ContractShutdown.selector);
-    //     hook.deposit(deployer.addr, 0);
-
-    //     vm.prank(address(manager));
-    //     vm.expectRevert(IALM.ContractShutdown.selector);
-    //     hook.beforeSwap(address(0), key, IPoolManager.SwapParams(true, 0, 0), "");
-    // }
+        vm.prank(address(manager));
+        vm.expectRevert(IALM.ContractShutdown.selector);
+        hook.beforeSwap(address(0), key, IPoolManager.SwapParams(true, 0, 0), "");
+    }
 }
