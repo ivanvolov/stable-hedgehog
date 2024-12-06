@@ -133,7 +133,6 @@ abstract contract ALMTestBase is Test, Deployers {
     }
 
     function _swap(bool zeroForOne, int256 amount, PoolKey memory _key) internal returns (uint256, uint256) {
-        console.log("!");
         vm.startPrank(swapper.addr);
         BalanceDelta delta = swapRouter.swap(
             _key,
@@ -145,7 +144,6 @@ abstract contract ALMTestBase is Test, Deployers {
             PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false}),
             ""
         );
-        console.log("!");
         return (uint256(int256(delta.amount0())), uint256(int256(delta.amount1())));
     }
 

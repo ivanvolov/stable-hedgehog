@@ -156,12 +156,8 @@ contract ALM is BaseStrategyHook, ERC20 {
             lendingAdapter.addCollateral(usdcIn);
             // We don't have token 1 on our account yet, so we need to borrow USDT.
             // We also need to create a debit so user could take it back from the PM.
-            console.log(USDT.balanceOf(address(this)));
             lendingAdapter.borrow(usdtOut);
-            console.log("!");
-            console.log(USDT.balanceOf(address(this)));
             key.currency1.settle(poolManager, address(this), usdtOut, false);
-            console.log("!");
             sqrtPriceCurrent = sqrtPriceNext;
             return beforeSwapDelta;
         } else {
@@ -182,7 +178,6 @@ contract ALM is BaseStrategyHook, ERC20 {
             lendingAdapter.removeCollateral(usdcOut);
             key.currency0.settle(poolManager, address(this), usdcOut, false);
             sqrtPriceCurrent = sqrtPriceNext;
-            console.log("4");
             return beforeSwapDelta;
         }
     }

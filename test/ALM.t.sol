@@ -69,15 +69,15 @@ contract ALMTest is ALMTestBase {
         assertEqBalanceState(swapper.addr, 0, usdcToSwap);
 
         (, uint256 deltaUSDT) = swapUSDC_USDT_In(usdcToSwap);
-        // assertApproxEqAbs(deltaUSDT, 1000 * 1e6, 1e1);
+        assertApproxEqAbs(deltaUSDT, 99 * 1e6, 1e6);
 
-        // assertEqBalanceState(swapper.addr, deltaUSDT, 0);
-        // assertEqBalanceState(address(hook), 0, 0);
+        assertEqBalanceState(swapper.addr, deltaUSDT, 0);
+        assertEqBalanceState(address(hook), 0, 0);
 
-        // assertEqMorphoA(shortMId, usdcToSwap, 0, 0);
-        // assertEqMorphoA(longMId, 0, 0, amountToDep - deltaUSDT);
+        assertApproxEqAbs(lendingAdapter.getCollateral(), 3098556823, 10);
+        assertApproxEqAbs(lendingAdapter.getBorrowed(), 2100730696, 10);
 
-        // assertEq(hook.sqrtPriceCurrent(), 1181210201945000124313491613764168);
+        assertEq(hook.sqrtPriceCurrent(), 78802880669457038464881639888);
     }
 
     // function test_swap_price_up_out() public {
@@ -137,81 +137,6 @@ contract ALMTest is ALMTestBase {
     //     assertEqMorphoA(longMId, 0, deltaUSDC, amountToDep + usdtToSwapQ);
 
     //     assertEq(hook.sqrtPriceCurrent(), 1181128042874516412352801494904863);
-    // }
-
-    // function test_swap_price_down_rebalance() public {
-    //     test_swap_price_down_in();
-
-    //     vm.expectRevert();
-    //     rebalanceAdapter.rebalance();
-
-    //     vm.prank(deployer.addr);
-    //     vm.expectRevert(SRebalanceAdapter.NoRebalanceNeeded.selector);
-    //     rebalanceAdapter.rebalance();
-
-    //     // Swap some more
-    //     uint256 usdtToSwap = 10 * 1e18;
-    //     deal(address(USDT), address(swapper.addr), usdtToSwap);
-    //     swapUSDT_USDC_In(usdtToSwap);
-
-    //     assertEq(hook.sqrtPriceCurrent(), 1199991337229301579466306546906758);
-
-    //     assertEqBalanceState(address(hook), 0, 0);
-    //     assertEqMorphoA(shortMId, 0, 0, 0);
-    //     assertEqMorphoA(longMId, 0, 46216366450, 110999999999999999712);
-
-    //     assertEq(rebalanceAdapter.sqrtPriceLastRebalance(), initialSQRTPrice);
-
-    //     vm.prank(deployer.addr);
-    //     rebalanceAdapter.rebalance();
-
-    //     assertEq(rebalanceAdapter.sqrtPriceLastRebalance(), 1199991337229301579466306546906758);
-
-    //     assertEqBalanceState(address(hook), 0, 0);
-    //     assertEqMorphoA(shortMId, 0, 0, 0);
-    //     assertEqMorphoA(longMId, 0, 0, 98956727267096030628);
-    // }
-
-    // function test_swap_price_down_rebalance_withdraw() public {
-    //     test_swap_price_down_rebalance();
-
-    //     uint256 shares = hook.balanceOf(alice.addr);
-    //     assertEqBalanceStateZero(alice.addr);
-    //     assertApproxEqAbs(shares, 100 ether, 1e10);
-
-    //     vm.prank(alice.addr);
-    //     hook.withdraw(alice.addr, shares / 2);
-
-    //     assertApproxEqAbs(hook.balanceOf(alice.addr), shares / 2, 1e10);
-    //     assertEqBalanceState(alice.addr, 49478363633548016058, 0);
-    // }
-
-    // function test_swap_price_down_withdraw() public {
-    //     test_swap_price_down_in();
-
-    //     uint256 shares = hook.balanceOf(alice.addr);
-    //     assertEqBalanceStateZero(alice.addr);
-    //     assertApproxEqAbs(shares, 100 ether, 1e10);
-
-    //     vm.prank(alice.addr);
-    //     hook.withdraw(alice.addr, shares / 10);
-
-    //     // assertApproxEqAbs(hook.balanceOf(alice.addr), shares / 2, 1e10);
-    //     // assertEqBalanceState(alice.addr, 49478363633548016058, 0);
-    // }
-
-    // function test_swap_price_up_withdraw() public {
-    //     test_swap_price_up_in();
-
-    //     uint256 shares = hook.balanceOf(alice.addr);
-    //     assertEqBalanceStateZero(alice.addr);
-    //     assertApproxEqAbs(shares, 100 ether, 1e10);
-
-    //     vm.prank(alice.addr);
-    //     hook.withdraw(alice.addr, shares / 2);
-
-    //     assertApproxEqAbs(hook.balanceOf(alice.addr), shares / 2, 1e10);
-    //     assertEqBalanceState(alice.addr, 49525627778055050818, 2243500000);
     // }
 
     // function test_accessability() public {
