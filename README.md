@@ -1,4 +1,4 @@
-# Young hedgehog hook
+# Stable hedgehog hook
 
 ## Setting up
 
