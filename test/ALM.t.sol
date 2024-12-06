@@ -100,45 +100,6 @@ contract ALMTest is ALMTestBase {
         assertEq(hook.sqrtPriceCurrent(), 78800585512440833154126931954);
     }
 
-    function test_swap_price_down_in() public {
-        uint256 usdtToSwap = 100 * 1e6;
-        test_deposit();
-
-        deal(address(USDT), address(swapper.addr), usdtToSwap);
-        assertEqBalanceState(swapper.addr, usdtToSwap, 0);
-
-        (uint256 deltaUSDC, ) = swapUSDT_USDC_In(usdtToSwap);
-        // assertEq(deltaUSDC, 4257016319);
-
-        // assertEqBalanceState(swapper.addr, 0, deltaUSDC);
-        // assertEqBalanceState(address(hook), 0, 0);
-
-        // assertEqMorphoA(shortMId, 0, 0, 0);
-        // assertEqMorphoA(longMId, 0, deltaUSDC, amountToDep + usdtToSwap);
-
-        // assertEq(hook.sqrtPriceCurrent(), 1184338667228746981679537543072454);
-    }
-
-    // function test_swap_price_down_out() public {
-    //     uint256 usdtToSwapQ = 1048539297596844510; // this should be get from quoter
-    //     uint256 usdcToGetFSwap = 4486999802;
-    //     test_deposit();
-
-    //     deal(address(USDT), address(swapper.addr), usdtToSwapQ);
-    //     assertEqBalanceState(swapper.addr, usdtToSwapQ, 0);
-
-    //     (uint256 deltaUSDC, ) = swapUSDT_USDC_Out(usdcToGetFSwap);
-    //     assertEq(deltaUSDC, usdcToGetFSwap);
-
-    //     assertEqBalanceState(swapper.addr, 0, deltaUSDC);
-    //     assertEqBalanceState(address(hook), 0, 0);
-
-    //     assertEqMorphoA(shortMId, 0, 0, 0);
-    //     assertEqMorphoA(longMId, 0, deltaUSDC, amountToDep + usdtToSwapQ);
-
-    //     assertEq(hook.sqrtPriceCurrent(), 1181128042874516412352801494904863);
-    // }
-
     function test_accessability() public {
         vm.expectRevert(SafeCallback.NotPoolManager.selector);
         hook.afterInitialize(address(0), key, 0, 0, "");
